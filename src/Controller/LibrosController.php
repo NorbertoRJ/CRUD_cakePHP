@@ -86,7 +86,30 @@ class LibrosController extends AppController
             'contain' => [],
         ]);
         if ($this->request->is(['patch', 'post', 'put'])) {
+
+            $nombreImagenAnterior = $libro->imagen;
+
             $libro = $this->Libros->patchEntity($libro, $this->request->getData());
+
+            $imagen = $this->request->getData('imagen');
+
+            $libro->imagen = $nombreImagenAnterior;
+
+            if ($imagen->getClientFilename()) {
+
+                $rutaArchivo = WWW_ROOT . 'img/Libros/' . $nombreImagenAnterior;
+
+                if (file_exists($rutaArchivo)) {
+                    unlink($rutaArchivo);
+                }
+
+                $tiempo = FrozenTime::now()->toUnixString();
+                $nombreImagen = $tiempo . "_" . $imagen->getClientFileName();
+                $destino = WWW_ROOT . 'img/Libros/' . $nombreImagen;
+                $imagen->moveTo($destino);
+                $libro->imagen = $nombreImagen;
+            }
+
             if ($this->Libros->save($libro)) {
                 $this->Flash->success(__('The libro has been saved.'));
 
@@ -108,6 +131,12 @@ class LibrosController extends AppController
     {
         $this->request->allowMethod(['post', 'delete']);
         $libro = $this->Libros->get($id);
+        $rutaArchivo = WWW_ROOT . 'img/Libros/' . $libro['imagen'];
+
+        if (file_exists($rutaArchivo)) {
+            unlink($rutaArchivo);
+        }
+
         if ($this->Libros->delete($libro)) {
             $this->Flash->success(__('The libro has been deleted.'));
         } else {
